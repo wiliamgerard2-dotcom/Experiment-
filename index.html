@@ -1,0 +1,187 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mystery Gift 🎁</title>
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;background:#090914;color:white;
+ font-family:Arial,sans-serif;text-align:center;
+ min-height:100vh;
+ display:flex;align-items:center;justify-content:center;
+}
+.panel{
+ width:90%;max-width:430px;padding:28px;
+ background:#17172a;border:1px solid #383858;
+ border-radius:22px;box-shadow:0 0 35px #6b39ff30;
+}
+h1{color:#d7a9ff}
+button{
+ background:#9254ff;color:white;border:0;
+ padding:14px 22px;border-radius:12px;
+ font-size:15px;margin:8px;cursor:pointer;
+}
+button:hover{background:#7134d9}
+.hidden{display:none}
+input{
+ padding:13px;border-radius:9px;border:0;
+ width:100%;margin:8px 0;
+}
+video,img{width:100%;border-radius:12px;margin-top:12px}
+.small{color:#aaa;font-size:13px}
+.gift{font-size:100px;cursor:pointer;
+ animation:float 1.5s infinite alternate}
+@keyframes float{to{transform:translateY(-13px)}}
+</style>
+</head>
+<body>
+
+<div class="panel" id="home">
+ <div class="gift" onclick="openGift()">🎁</div>
+ <h1>MYSTERY GIFT</h1>
+ <p>Seseorang mengirimkan hadiah spesial untukmu!</p>
+ <button onclick="openGift()">BUKA HADIAH</button>
+ <p class="small">Klik untuk melihat kejutan.</p>
+</div>
+
+<div class="panel hidden" id="surprise">
+ <h1>SELAMAT! 🎉</h1>
+ <div style="font-size:75px">🤡</div>
+ <h2>KAMU KENA PRANK!</h2>
+ <p>Ternyata hadiahnya tidak ada apa-apa 😂</p>
+ <hr>
+ <h3>📸 Mau foto ekspresi kamu?</h3>
+ <p class="small">
+ Kamera hanya akan diaktifkan setelah kamu memberikan izin.
+ Foto hanya disimpan jika kamu menyetujuinya.
+ </p>
+ <button onclick="startCamera()">AKTIFKAN KAMERA</button>
+ <div id="cameraArea" class="hidden">
+  <video id="video" autoplay playsinline></video>
+  <button onclick="takePhoto()">AMBIL FOTO</button>
+  <canvas id="canvas" class="hidden"></canvas>
+  <div id="preview"></div>
+  <button id="saveBtn" class="hidden" onclick="savePhoto()">SIMPAN FOTO</button>
+ </div>
+</div>
+
+<div class="panel hidden" id="admin">
+ <h1>JETGPT ADMIN</h1>
+ <p>Dashboard foto Mystery Gift</p>
+ <input id="password" type="password"
+ placeholder="Password admin">
+ <button onclick="login()">LOGIN ADMIN</button>
+ <p id="error" style="color:#ff7777"></p>
+ <div id="gallery" class="hidden">
+  <h3>Galeri foto</h3>
+  <div id="photos"></div>
+  <button onclick="logout()">LOGOUT</button>
+  <button onclick="deletePhotos()">HAPUS SEMUA FOTO</button>
+ </div>
+</div>
+
+<script>
+let stream=null;
+let captured=null;
+
+// Demo password admin. Ganti sebelum digunakan.
+const ADMIN_PASSWORD="GantiPassword123!";
+
+function openGift(){
+ document.getElementById("home").classList.add("hidden");
+ document.getElementById("surprise").classList.remove("hidden");
+}
+
+function startCamera(){
+ navigator.mediaDevices.getUserMedia({
+  video:{facingMode:"user"},audio:false
+ }).then(s=>{
+  stream=s;
+  document.getElementById("video").srcObject=s;
+  document.getElementById("cameraArea").classList.remove("hidden");
+ }).catch(()=>{
+  alert("Kamera tidak tersedia atau izin tidak diberikan.");
+ });
+}
+
+function takePhoto(){
+ const video=document.getElementById("video");
+ const canvas=document.getElementById("canvas");
+ canvas.width=video.videoWidth;
+ canvas.height=video.videoHeight;
+ canvas.getContext("2d").drawImage(video,0,0);
+ captured=canvas.toDataURL("image/jpeg",0.8);
+ document.getElementById("preview").innerHTML=
+  "<p>Pratinjau foto:</p><img src='"+captured+"'>";
+ document.getElementById("saveBtn").classList.remove("hidden");
+}
+
+function savePhoto(){
+ if(!captured)return;
+ try{
+  let photos=JSON.parse(localStorage.getItem("jetPhotos")||"[]");
+  photos.push({
+   image:captured,
+   date:new Date().toLocaleString("id-ID")
+  });
+  localStorage.setItem("jetPhotos",JSON.stringify(photos));
+  alert("Foto berhasil disimpan di browser ini!");
+  captured=null;
+  document.getElementById("preview").innerHTML="";
+  document.getElementById("saveBtn").classList.add("hidden");
+ }catch(e){
+  alert("Penyimpanan penuh. Hapus foto lama terlebih dahulu.");
+ }
+}
+
+function login(){
+ if(document.getElementById("password").value===ADMIN_PASSWORD){
+  document.getElementById("gallery").classList.remove("hidden");
+  document.getElementById("error").textContent="";
+  showPhotos();
+ }else{
+  document.getElementById("error").textContent="Password salah!";
+ }
+}
+
+function showPhotos(){
+ const photos=JSON.parse(localStorage.getItem("jetPhotos")||"[]");
+ const box=document.getElementById("photos");
+ box.innerHTML="";
+ if(!photos.length){
+  box.innerHTML="<p>Belum ada foto tersimpan.</p>";
+ }
+ photos.forEach(p=>{
+  const item=document.createElement("div");
+  const img=document.createElement("img");
+  img.src=p.image;
+  const date=document.createElement("p");
+  date.textContent=p.date;
+  item.append(img,date);
+  box.append(item);
+ });
+}
+
+function logout(){
+ document.getElementById("gallery").classList.add("hidden");
+ document.getElementById("password").value="";
+}
+
+function deletePhotos(){
+ if(confirm("Hapus semua foto?")){
+  localStorage.removeItem("jetPhotos");
+  showPhotos();
+ }
+}
+
+// Akses dashboard melalui #admin
+if(location.hash==="#admin"){
+ document.getElementById("home").classList.add("hidden");
+ document.getElementById("admin").classList.remove("hidden");
+}
+</script>
+</body>
+</html>
